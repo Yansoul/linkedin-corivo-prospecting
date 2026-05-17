@@ -22,12 +22,6 @@ pnpm install
 The default browser strategy attaches to Chrome over the Chrome DevTools Protocol. Modern Chrome refuses remote debugging on the default profile directory, so the helper starts a dedicated visible Chrome profile for this tool. Log in to LinkedIn once in that window; the session is reused on later runs.
 
 ```bash
-pnpm chrome
-```
-
-Then run:
-
-```bash
 pnpm dev
 ```
 

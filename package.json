@@ -17,8 +17,8 @@
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "dev": "tsx src/cli.ts run",
-    "scan": "tsx src/cli.ts run --mode scan --classifier-provider none --no-allow-send-without-note",
+    "dev": "pnpm chrome && tsx src/cli.ts run",
+    "scan": "pnpm chrome && tsx src/cli.ts run --mode scan --classifier-provider none --no-allow-send-without-note",
     "report": "tsx src/cli.ts report --latest",
     "chrome": "bash scripts/open-chrome-cdp.sh"
   },
