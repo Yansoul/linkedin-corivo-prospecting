@@ -19,7 +19,31 @@ This tool is built for visible local runs with human supervision, not unattended
 pnpm install
 ```
 
-The default browser strategy opens a visible persistent Chrome profile at `$HOME/.local/share/corivo-linkedin-chrome`. Log in to LinkedIn manually in that browser the first time it opens.
+The default browser strategy attaches to Chrome over the Chrome DevTools Protocol, using your existing Chrome profile. Quit normal Chrome first, then start it with the helper:
+
+```bash
+pnpm chrome
+```
+
+Then run:
+
+```bash
+pnpm dev
+```
+
+By default the helper uses:
+
+```text
+Chrome user data dir: ~/Library/Application Support/Google/Chrome
+Chrome profile: Default
+Debug port: 9222
+```
+
+To use a different Chrome profile:
+
+```bash
+LINKEDIN_CORIVO_CHROME_PROFILE="Profile 1" pnpm chrome
+```
 
 ## Commands
 
@@ -27,6 +51,7 @@ The default browser strategy opens a visible persistent Chrome profile at `$HOME
 pnpm dev
 pnpm scan
 pnpm report
+pnpm chrome
 pnpm dev --mode prepare
 pnpm exec tsx src/cli.ts inspect-candidate https://www.linkedin.com/in/example/
 ```

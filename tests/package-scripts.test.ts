@@ -10,6 +10,7 @@ describe("package scripts", () => {
 
     expect(pkg.scripts.dev).toBe("tsx src/cli.ts run");
     expect(pkg.scripts.scan).toBe("tsx src/cli.ts run --mode scan --classifier-provider none");
+    expect(pkg.scripts.chrome).toBe("bash scripts/open-chrome-cdp.sh");
     expect(pkg.packageManager).toMatch(/^pnpm@/);
   });
 });
