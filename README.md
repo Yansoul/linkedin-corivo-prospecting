@@ -16,28 +16,19 @@ This tool is intentionally conservative. It is built for visible local runs with
 ## Setup
 
 ```bash
-npm install
-npm run build
+pnpm install
 ```
 
-For the default CDP browser strategy, start a visible Chrome instance:
-
-```bash
-/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
-  --remote-debugging-port=9222 \
-  --user-data-dir="$HOME/.local/share/corivo-linkedin-chrome"
-```
-
-Log in to LinkedIn manually in that Chrome window before running the workflow.
+The default browser strategy opens a visible persistent Chrome profile at `$HOME/.local/share/corivo-linkedin-chrome`. Log in to LinkedIn manually in that browser the first time it opens.
 
 ## Commands
 
 ```bash
-npm run dev -- run --mode scan --classifier-provider none
-npm run dev -- run --mode prepare --max-prepared 5
-npm run dev -- run --mode debug_send --allow-send-without-note
-npm run dev -- report --latest
-npm run dev -- inspect-candidate https://www.linkedin.com/in/example/
+pnpm dev
+pnpm scan
+pnpm report
+pnpm dev --mode debug_send --allow-send-without-note
+pnpm exec tsx src/cli.ts inspect-candidate https://www.linkedin.com/in/example/
 ```
 
 Use `classifier.provider="openai"` with a valid OpenAI API key to enable LLM classification. Use `classifier.provider="none"` for local dry runs that rely on conservative heuristics.
@@ -65,8 +56,7 @@ Priority order is:
 Equivalent CLI flags:
 
 ```bash
-npm run dev -- run \
-  --mode prepare \
+pnpm dev \
   --openai-api-key "$OPENAI_API_KEY" \
   --openai-base-url "https://api.openai.com/v1" \
   --openai-model "gpt-5.4-mini"
@@ -75,8 +65,8 @@ npm run dev -- run \
 Fast mode:
 
 ```bash
-npm run dev -- run --mode prepare --fast
-npm run dev -- run --mode prepare --no-fast
+pnpm dev --fast
+pnpm dev --no-fast
 ```
 
 `--fast` sends `reasoning.effort="minimal"` to the OpenAI Responses API. `--no-fast` leaves reasoning unset and uses the selected model's default behavior.
@@ -92,7 +82,7 @@ npm run dev -- run --mode prepare --no-fast
 ## Development
 
 ```bash
-npm test
-npm run typecheck
-npm run build
+pnpm test
+pnpm typecheck
+pnpm build
 ```

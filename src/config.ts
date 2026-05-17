@@ -79,7 +79,7 @@ export const defaultConfig: AppConfig = {
     baseUrl: "https://www.linkedin.com",
     useExistingChromeProfile: true,
     chromeUserDataDir: null,
-    openStrategy: "playwright-cdp",
+    openStrategy: "playwright-persistent",
     newCandidateContext: "new-window"
   },
   run: {

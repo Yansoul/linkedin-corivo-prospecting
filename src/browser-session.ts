@@ -66,6 +66,7 @@ export class PlaywrightBrowserSession implements BrowserSession {
 
     const userDataDir = this.config.chromeUserDataDir ?? `${process.env.HOME}/.local/share/corivo-linkedin-chrome`;
     this.context = await chromium.launchPersistentContext(userDataDir, {
+      channel: "chrome",
       headless: false,
       viewport: null,
       args: ["--start-maximized"]

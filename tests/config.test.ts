@@ -6,6 +6,7 @@ describe("resolveConfig", () => {
     const config = resolveConfig();
 
     expect(config.run.mode).toBe("prepare");
+    expect(config.linkedin.openStrategy).toBe("playwright-persistent");
     expect(config.actions.allowSendWithoutNote).toBe(false);
     expect(config.actions.stopAtFinalDialog).toBe(true);
   });
