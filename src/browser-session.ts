@@ -2,6 +2,7 @@ import { chromium, type Browser, type BrowserContext, type Page } from "playwrig
 import type { AppConfig, WarningSignal } from "./types.js";
 import { buildPeopleSearchUrl } from "./result-extractor.js";
 import { detectWarningOnPage } from "./warning-detector.js";
+import { WarningJudge } from "./warning-judge.js";
 
 export interface BrowserSession {
   openSearchPage(query: string): Promise<Page>;
@@ -16,8 +17,14 @@ export class PlaywrightBrowserSession implements BrowserSession {
   private browser: Browser | null = null;
   private context: BrowserContext | null = null;
   private windowCounter = 0;
+  private readonly warningJudge: WarningJudge;
 
-  constructor(private readonly config: AppConfig["linkedin"]) {}
+  constructor(
+    private readonly config: AppConfig["linkedin"],
+    classifierConfig: AppConfig["classifier"]
+  ) {
+    this.warningJudge = new WarningJudge(classifierConfig);
+  }
 
   async openSearchPage(query: string): Promise<Page> {
     const page = await this.openPage();
@@ -36,7 +43,7 @@ export class PlaywrightBrowserSession implements BrowserSession {
   }
 
   async detectWarning(page: Page): Promise<WarningSignal | null> {
-    return detectWarningOnPage(page);
+    return detectWarningOnPage(page, (candidate) => this.warningJudge.judge(candidate));
   }
 
   async waitForOperatorResolvableWarning(page: Page, warning: WarningSignal): Promise<WarningSignal | null> {

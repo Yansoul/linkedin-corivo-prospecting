@@ -61,7 +61,7 @@ program
 
     const store = new StateStore(config.storage);
     const runId = store.startRun(config);
-    const browser = new PlaywrightBrowserSession(config.linkedin);
+    const browser = new PlaywrightBrowserSession(config.linkedin, config.classifier);
     try {
       const result = await new QueryRunner(config, store, browser).run(runId);
       const reportPath = new ReportWriter(store).writeReport(runId);

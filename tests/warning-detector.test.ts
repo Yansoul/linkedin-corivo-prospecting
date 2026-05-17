@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { detectWarningFromText } from "../src/warning-detector.js";
+import { describe, expect, it, vi } from "vitest";
+import { detectWarningFromText, detectWarningOnPage } from "../src/warning-detector.js";
 
 describe("detectWarningFromText", () => {
   it("detects account safety and verification warnings", () => {
@@ -17,6 +17,39 @@ describe("detectWarningFromText", () => {
 
   it("returns null when warning keywords are absent", () => {
     expect(detectWarningFromText("People results for product marketing manager AI startup")).toBeNull();
+  });
+
+  it("does not hard-stop on profile verification copy without a model judgment", () => {
+    expect(
+      detectWarningFromText(
+        "Amber is a Premium member. View profile verification details and featured posts.",
+        "https://www.linkedin.com/in/amber-hanzi-shen/"
+      )
+    ).toBeNull();
+  });
+
+  it("uses a model judge for soft verification text before returning a warning", async () => {
+    const page = {
+      url: () => "https://www.linkedin.com/in/amber-hanzi-shen/",
+      textContent: async () => "Please verify your identity before continuing to LinkedIn.",
+      locator: () => {
+        throw new Error("not used");
+      },
+      waitForTimeout: async () => undefined
+    };
+    const judge = vi.fn(async (candidate) => ({
+      ...candidate,
+      warningType: "verification",
+      matchedKeywords: [...candidate.matchedKeywords, "model_confirmed"]
+    }));
+
+    const warning = await detectWarningOnPage(page, judge);
+
+    expect(judge).toHaveBeenCalledTimes(1);
+    expect(warning).toMatchObject({
+      warningType: "verification",
+      matchedKeywords: ["verify", "model_confirmed"]
+    });
   });
 
   it("hard-stops on LinkedIn login pages", () => {

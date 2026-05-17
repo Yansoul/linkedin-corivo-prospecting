@@ -2,6 +2,17 @@ import { describe, expect, it, vi } from "vitest";
 import { PlaywrightBrowserSession, waitForOperatorResolvableWarning } from "../src/browser-session.js";
 import type { AppConfig, PageLike, WarningSignal } from "../src/types.js";
 
+const classifierConfig: AppConfig["classifier"] = {
+  provider: "none",
+  apiKey: null,
+  baseUrl: null,
+  model: "test-model",
+  fastMode: true,
+  temperature: 0,
+  minConfidenceToPrepare: 0.78,
+  maxTechnicalRiskToPrepare: "medium-low"
+};
+
 class FakePage implements PageLike {
   checks = 0;
 
@@ -106,6 +117,23 @@ describe("waitForOperatorResolvableWarning", () => {
 });
 
 describe("PlaywrightBrowserSession.close", () => {
+  it("does not report soft verification copy as a warning when the model judge is disabled", async () => {
+    const session = new PlaywrightBrowserSession({
+      baseUrl: "https://www.linkedin.com",
+      useExistingChromeProfile: true,
+      chromeUserDataDir: null,
+      cdpPort: 9223,
+      openStrategy: "playwright-cdp",
+      newCandidateContext: "new-window"
+    } satisfies AppConfig["linkedin"], classifierConfig);
+    const page = {
+      url: () => "https://www.linkedin.com/in/amber-hanzi-shen/",
+      textContent: async () => "View profile verification details and featured posts."
+    };
+
+    await expect(session.detectWarning(page as never)).resolves.toBeNull();
+  });
+
   it("disconnects from a Chrome instance attached over CDP without closing its default context first", async () => {
     const session = new PlaywrightBrowserSession({
       baseUrl: "https://www.linkedin.com",
@@ -114,7 +142,7 @@ describe("PlaywrightBrowserSession.close", () => {
       cdpPort: 9223,
       openStrategy: "playwright-cdp",
       newCandidateContext: "new-window"
-    } satisfies AppConfig["linkedin"]);
+    } satisfies AppConfig["linkedin"], classifierConfig);
     const closeContext = vi.fn();
     const closeBrowser = vi.fn();
 
@@ -137,7 +165,7 @@ describe("PlaywrightBrowserSession.close", () => {
       cdpPort: 9223,
       openStrategy: "playwright-persistent",
       newCandidateContext: "new-window"
-    } satisfies AppConfig["linkedin"]);
+    } satisfies AppConfig["linkedin"], classifierConfig);
     const closeContext = vi.fn();
     const closeBrowser = vi.fn();
 
@@ -162,7 +190,7 @@ describe("PlaywrightBrowserSession page labeling", () => {
       cdpPort: 9223,
       openStrategy: "playwright-cdp",
       newCandidateContext: "new-window"
-    } satisfies AppConfig["linkedin"]);
+    } satisfies AppConfig["linkedin"], classifierConfig);
     const evaluate = vi.fn();
     const context = {
       newPage: vi.fn(async () => ({

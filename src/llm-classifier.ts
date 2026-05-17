@@ -120,7 +120,10 @@ export class LLMClassifier {
 export function createOpenAIClient(config: AppConfig["classifier"]): OpenAI {
   return new OpenAI({
     apiKey: config.apiKey ?? undefined,
-    baseURL: config.baseUrl ?? undefined
+    baseURL: config.baseUrl ?? undefined,
+    defaultHeaders: {
+      "User-Agent": "linkedin-corivo-prospecting/0.1.0"
+    }
   });
 }
 

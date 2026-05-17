@@ -75,6 +75,9 @@ describe("LLM classifier helpers", () => {
 
     expect(client.apiKey).toBe("test-key");
     expect(client.baseURL).toBe("https://api.example.com/v1");
+    expect(
+      (client as unknown as { _options: { defaultHeaders: Record<string, string> } })._options.defaultHeaders["User-Agent"]
+    ).toBe("linkedin-corivo-prospecting/0.1.0");
   });
 
   it("adds minimal reasoning only in fast mode", () => {
