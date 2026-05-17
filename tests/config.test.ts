@@ -52,7 +52,7 @@ describe("resolveConfig", () => {
     expect(config.classifier.fastMode).toBe(true);
   });
 
-  it("lets explicit config override environment variables", () => {
+  it("lets environment variables override JSON classifier defaults", () => {
     const config = resolveConfigFromEnv(
       {
         OPENAI_API_KEY: "env-key",
@@ -60,6 +60,25 @@ describe("resolveConfig", () => {
         OPENAI_MODEL: "env-model",
         OPENAI_FAST_MODE: "true"
       },
+      {
+        classifier: {
+          apiKey: "json-key",
+          baseUrl: "https://custom.example.com/v1",
+          model: "json-model",
+          fastMode: false
+        }
+      }
+    );
+
+    expect(config.classifier.apiKey).toBe("env-key");
+    expect(config.classifier.baseUrl).toBe("https://api.example.com/v1");
+    expect(config.classifier.model).toBe("env-model");
+    expect(config.classifier.fastMode).toBe(true);
+  });
+
+  it("keeps JSON classifier values when matching environment variables are missing", () => {
+    const config = resolveConfigFromEnv(
+      {},
       {
         classifier: {
           apiKey: "json-key",

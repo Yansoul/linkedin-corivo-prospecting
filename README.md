@@ -76,8 +76,8 @@ OPENAI_FAST_MODE=false
 Priority order is:
 
 1. CLI flags
-2. JSON config
-3. `.env` / shell environment
+2. `.env` / shell environment
+3. JSON config
 4. built-in defaults
 
 Equivalent CLI flags:

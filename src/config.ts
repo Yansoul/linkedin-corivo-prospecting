@@ -169,9 +169,9 @@ export const defaultConfig: AppConfig = {
   }
 };
 
-export function loadConfigFile(path: string): AppConfig {
+export function loadConfigFile(path: string): PartialAppConfig {
   const raw = JSON.parse(readFileSync(path, "utf8")) as unknown;
-  return resolveConfigFromEnv(process.env, raw);
+  return partialConfigSchema.parse(raw);
 }
 
 export function resolveConfig(overrides: unknown = {}): AppConfig {
@@ -190,7 +190,11 @@ export function resolveConfig(overrides: unknown = {}): AppConfig {
 }
 
 export function resolveConfigFromEnv(env: NodeJS.ProcessEnv | Record<string, string | undefined>, overrides: unknown = {}): AppConfig {
-  const envConfig: PartialAppConfig = {
+  return resolveConfig(mergePartialConfig(partialConfigSchema.parse(overrides), envConfigFromEnv(env)));
+}
+
+export function envConfigFromEnv(env: NodeJS.ProcessEnv | Record<string, string | undefined>): PartialAppConfig {
+  return {
     classifier: {
       apiKey: env.OPENAI_API_KEY || undefined,
       baseUrl: env.OPENAI_BASE_URL || undefined,
@@ -198,7 +202,6 @@ export function resolveConfigFromEnv(env: NodeJS.ProcessEnv | Record<string, str
       fastMode: parseBooleanEnv(env.OPENAI_FAST_MODE)
     }
   };
-  return resolveConfig(mergePartialConfig(envConfig, overrides));
 }
 
 export function validateConfig(config: AppConfig): void {
@@ -227,14 +230,22 @@ function parseBooleanEnv(value: string | undefined): boolean | undefined {
   throw new Error(`Invalid OPENAI_FAST_MODE value: ${value}`);
 }
 
-function mergePartialConfig(base: PartialAppConfig, overrides: unknown): PartialAppConfig {
+export function mergePartialConfig(base: PartialAppConfig, overrides: unknown): PartialAppConfig {
   const parsed = partialConfigSchema.parse(overrides);
   return {
-    linkedin: { ...base.linkedin, ...parsed.linkedin },
-    run: { ...base.run, ...parsed.run },
-    actions: { ...base.actions, ...parsed.actions },
-    classifier: { ...base.classifier, ...parsed.classifier },
-    filters: { ...base.filters, ...parsed.filters },
-    storage: { ...base.storage, ...parsed.storage }
+    linkedin: mergeSection(base.linkedin, parsed.linkedin),
+    run: mergeSection(base.run, parsed.run),
+    actions: mergeSection(base.actions, parsed.actions),
+    classifier: mergeSection(base.classifier, parsed.classifier),
+    filters: mergeSection(base.filters, parsed.filters),
+    storage: mergeSection(base.storage, parsed.storage)
   };
+}
+
+function mergeSection<T extends Record<string, unknown>>(base: T | undefined, overrides: T | undefined): T {
+  return { ...(base ?? {}), ...removeUndefined(overrides ?? {}) } as T;
+}
+
+function removeUndefined<T extends Record<string, unknown>>(value: T): T {
+  return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined)) as T;
 }
