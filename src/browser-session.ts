@@ -8,6 +8,7 @@ export interface BrowserSession {
   openProfilePage(url: string): Promise<Page>;
   openNewCandidateContext(url: string): Promise<Page>;
   detectWarning(page: Page): Promise<WarningSignal | null>;
+  waitForLoginIfRequired(page: Page, warning: WarningSignal): Promise<WarningSignal | null>;
   close(): Promise<void>;
 }
 
@@ -36,6 +37,10 @@ export class PlaywrightBrowserSession implements BrowserSession {
 
   async detectWarning(page: Page): Promise<WarningSignal | null> {
     return detectWarningOnPage(page);
+  }
+
+  async waitForLoginIfRequired(page: Page, warning: WarningSignal): Promise<WarningSignal | null> {
+    return waitForLoginIfRequired(page, warning, (targetPage) => this.detectWarning(targetPage));
   }
 
   async close(): Promise<void> {
@@ -73,4 +78,32 @@ export class PlaywrightBrowserSession implements BrowserSession {
     });
     return this.context;
   }
+}
+
+export interface LoginWaitOptions {
+  timeoutMs: number;
+  pollMs: number;
+}
+
+export async function waitForLoginIfRequired<TPage extends { url(): string; waitForTimeout(ms: number): Promise<void> }>(
+  page: TPage,
+  warning: WarningSignal,
+  detectWarning: (page: TPage) => Promise<WarningSignal | null>,
+  options: LoginWaitOptions = { timeoutMs: 10 * 60 * 1000, pollMs: 2000 }
+): Promise<WarningSignal | null> {
+  if (warning.warningType !== "login_required") return warning;
+
+  const startedAt = Date.now();
+  console.error("LinkedIn login required. Complete login in the opened Chrome window; the run will continue automatically.");
+
+  while (Date.now() - startedAt < options.timeoutMs) {
+    await page.waitForTimeout(options.pollMs);
+    const currentWarning = await detectWarning(page);
+    if (!currentWarning || currentWarning.warningType !== "login_required") {
+      console.error("LinkedIn login detected. Continuing run.");
+      return currentWarning;
+    }
+  }
+
+  return warning;
 }

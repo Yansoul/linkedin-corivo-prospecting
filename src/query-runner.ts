@@ -38,7 +38,13 @@ export class QueryRunner {
       for (const query of this.config.run.queries.slice(0, this.config.run.maxQueriesPerRun)) {
         const queryId = this.store.startQuery(runId, query);
         const searchPage = await this.browser.openSearchPage(query);
-        const warning = await this.browser.detectWarning(searchPage);
+        let warning = await this.browser.detectWarning(searchPage);
+        if (warning?.warningType === "login_required") {
+          warning = await this.browser.waitForLoginIfRequired(searchPage, warning);
+          if (!warning) {
+            await searchPage.goto(searchPage.url(), { waitUntil: "domcontentloaded" });
+          }
+        }
         if (warning) {
           this.store.recordWarning(runId, warning);
           this.store.endQuery(queryId, "stopped_by_warning");
@@ -60,7 +66,13 @@ export class QueryRunner {
 
           reviewedForQuery += 1;
           const profilePage = await this.browser.openProfilePage(card.profileUrl);
-          const profileWarning = await this.browser.detectWarning(profilePage);
+          let profileWarning = await this.browser.detectWarning(profilePage);
+          if (profileWarning?.warningType === "login_required") {
+            profileWarning = await this.browser.waitForLoginIfRequired(profilePage, profileWarning);
+            if (!profileWarning) {
+              await profilePage.goto(profilePage.url(), { waitUntil: "domcontentloaded" });
+            }
+          }
           if (profileWarning) {
             this.store.recordWarning(runId, profileWarning);
             this.store.recordActionEvent(runId, candidateId, {
