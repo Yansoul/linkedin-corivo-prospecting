@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { resolveConfig } from "../src/config.js";
-import { parseClassifierOutput, shouldPrepareFromDecision, technicalRiskRank } from "../src/llm-classifier.js";
+import {
+  buildResponsesCreateParams,
+  createOpenAIClient,
+  parseClassifierOutput,
+  shouldPrepareFromDecision,
+  technicalRiskRank
+} from "../src/llm-classifier.js";
 
 describe("LLM classifier helpers", () => {
   it("parses strict JSON classifier output", () => {
@@ -58,5 +64,31 @@ describe("LLM classifier helpers", () => {
 
     expect(technicalRiskRank("medium-low")).toBeLessThan(technicalRiskRank("medium"));
     expect(shouldPrepareFromDecision(decision, config.classifier)).toBe(false);
+  });
+
+  it("builds an OpenAI client with explicit API key and base URL", () => {
+    const client = createOpenAIClient({
+      ...resolveConfig().classifier,
+      apiKey: "test-key",
+      baseUrl: "https://api.example.com/v1"
+    });
+
+    expect(client.apiKey).toBe("test-key");
+    expect(client.baseURL).toBe("https://api.example.com/v1");
+  });
+
+  it("adds minimal reasoning only in fast mode", () => {
+    const baseConfig = resolveConfig().classifier;
+    const fastParams = buildResponsesCreateParams(
+      { ...baseConfig, fastMode: true },
+      { query: "q", searchCard: {}, profile: {} }
+    );
+    const normalParams = buildResponsesCreateParams(
+      { ...baseConfig, fastMode: false },
+      { query: "q", searchCard: {}, profile: {} }
+    );
+
+    expect(fastParams.reasoning).toEqual({ effort: "minimal" });
+    expect(normalParams.reasoning).toBeUndefined();
   });
 });

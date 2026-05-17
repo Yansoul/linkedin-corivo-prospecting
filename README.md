@@ -40,7 +40,46 @@ npm run dev -- report --latest
 npm run dev -- inspect-candidate https://www.linkedin.com/in/example/
 ```
 
-Use `classifier.provider="openai"` with a valid `OPENAI_API_KEY` to enable LLM classification. Use `classifier.provider="none"` for local dry runs that rely on conservative heuristics.
+Use `classifier.provider="openai"` with a valid OpenAI API key to enable LLM classification. Use `classifier.provider="none"` for local dry runs that rely on conservative heuristics.
+
+## OpenAI Configuration
+
+The CLI automatically reads `.env` from the project root before loading config.
+
+Create `.env`:
+
+```bash
+OPENAI_API_KEY=your_key_here
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-5.4-mini
+OPENAI_FAST_MODE=false
+```
+
+Priority order is:
+
+1. CLI flags
+2. JSON config
+3. `.env` / shell environment
+4. built-in defaults
+
+Equivalent CLI flags:
+
+```bash
+npm run dev -- run \
+  --mode prepare \
+  --openai-api-key "$OPENAI_API_KEY" \
+  --openai-base-url "https://api.openai.com/v1" \
+  --openai-model "gpt-5.4-mini"
+```
+
+Fast mode:
+
+```bash
+npm run dev -- run --mode prepare --fast
+npm run dev -- run --mode prepare --no-fast
+```
+
+`--fast` sends `reasoning.effort="minimal"` to the OpenAI Responses API. `--no-fast` leaves reasoning unset and uses the selected model's default behavior.
 
 ## Data
 

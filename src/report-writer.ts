@@ -126,7 +126,9 @@ export function summarizeConfig(config: AppConfig): string {
       maxProfilesReviewedPerQuery: config.run.maxProfilesReviewedPerQuery,
       maxQueriesPerRun: config.run.maxQueriesPerRun,
       allowSendWithoutNote: config.actions.allowSendWithoutNote,
-      model: config.classifier.model
+      model: config.classifier.model,
+      baseUrl: config.classifier.baseUrl,
+      fastMode: config.classifier.fastMode
     },
     null,
     2

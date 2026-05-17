@@ -43,7 +43,10 @@ const partialConfigSchema = z
     classifier: z
       .object({
         provider: z.enum(["openai", "none"]).optional(),
+        apiKey: z.string().min(1).nullable().optional(),
+        baseUrl: z.string().url().nullable().optional(),
         model: z.string().min(1).optional(),
+        fastMode: z.boolean().optional(),
         temperature: z.number().min(0).max(2).optional(),
         minConfidenceToPrepare: z.number().min(0).max(1).optional(),
         maxTechnicalRiskToPrepare: technicalRiskSchema.optional()
@@ -98,7 +101,10 @@ export const defaultConfig: AppConfig = {
   },
   classifier: {
     provider: "openai",
+    apiKey: null,
+    baseUrl: null,
     model: "gpt-5.4-mini",
+    fastMode: false,
     temperature: 0,
     minConfidenceToPrepare: 0.78,
     maxTechnicalRiskToPrepare: "medium-low"
@@ -163,7 +169,7 @@ export const defaultConfig: AppConfig = {
 
 export function loadConfigFile(path: string): AppConfig {
   const raw = JSON.parse(readFileSync(path, "utf8")) as unknown;
-  return resolveConfig(raw);
+  return resolveConfigFromEnv(process.env, raw);
 }
 
 export function resolveConfig(overrides: unknown = {}): AppConfig {
@@ -179,6 +185,18 @@ export function resolveConfig(overrides: unknown = {}): AppConfig {
 
   validateConfig(config);
   return config;
+}
+
+export function resolveConfigFromEnv(env: NodeJS.ProcessEnv | Record<string, string | undefined>, overrides: unknown = {}): AppConfig {
+  const envConfig: PartialAppConfig = {
+    classifier: {
+      apiKey: env.OPENAI_API_KEY || undefined,
+      baseUrl: env.OPENAI_BASE_URL || undefined,
+      model: env.OPENAI_MODEL || undefined,
+      fastMode: parseBooleanEnv(env.OPENAI_FAST_MODE)
+    }
+  };
+  return resolveConfig(mergePartialConfig(envConfig, overrides));
 }
 
 export function validateConfig(config: AppConfig): void {
@@ -198,4 +216,23 @@ export function validateConfig(config: AppConfig): void {
   if (minDelay > maxDelay) {
     throw new Error("delayMsBetweenActions must be an ascending two-number tuple");
   }
+}
+
+function parseBooleanEnv(value: string | undefined): boolean | undefined {
+  if (value === undefined) return undefined;
+  if (/^(1|true|yes|fast)$/i.test(value)) return true;
+  if (/^(0|false|no|normal|no-fast)$/i.test(value)) return false;
+  throw new Error(`Invalid OPENAI_FAST_MODE value: ${value}`);
+}
+
+function mergePartialConfig(base: PartialAppConfig, overrides: unknown): PartialAppConfig {
+  const parsed = partialConfigSchema.parse(overrides);
+  return {
+    linkedin: { ...base.linkedin, ...parsed.linkedin },
+    run: { ...base.run, ...parsed.run },
+    actions: { ...base.actions, ...parsed.actions },
+    classifier: { ...base.classifier, ...parsed.classifier },
+    filters: { ...base.filters, ...parsed.filters },
+    storage: { ...base.storage, ...parsed.storage }
+  };
 }

@@ -24,7 +24,10 @@
   },
   "classifier": {
     "provider": "openai",
+    "apiKey": null,
+    "baseUrl": null,
     "model": "gpt-5.4-mini",
+    "fastMode": false,
     "temperature": 0,
     "minConfidenceToPrepare": 0.78,
     "maxTechnicalRiskToPrepare": "medium-low"

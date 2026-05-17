@@ -69,7 +69,10 @@ export interface AppConfig {
   };
   classifier: {
     provider: "openai" | "none";
+    apiKey: string | null;
+    baseUrl: string | null;
     model: string;
+    fastMode: boolean;
     temperature: number;
     minConfidenceToPrepare: number;
     maxTechnicalRiskToPrepare: TechnicalRisk;

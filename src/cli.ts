@@ -3,12 +3,14 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Command } from "commander";
 import { PlaywrightBrowserSession } from "./browser-session.js";
-import { loadConfigFile, resolveConfig, type PartialAppConfig } from "./config.js";
+import { loadConfigFile, resolveConfig, resolveConfigFromEnv, type PartialAppConfig } from "./config.js";
+import { loadDotenvFile } from "./env-loader.js";
 import { QueryRunner } from "./query-runner.js";
 import { ReportWriter, summarizeConfig, writeLatestReportPointer } from "./report-writer.js";
 import { StateStore } from "./state-store.js";
 
 const program = new Command();
+loadDotenvFile();
 
 program
   .name("linkedin-corivo")
@@ -23,9 +25,14 @@ program
   .option("--max-prepared <count>", "maximum prepared/sent candidates per run")
   .option("--allow-send-without-note", "allow clicking Send without a note, only valid in debug_send")
   .option("--classifier-provider <provider>", "openai or none")
+  .option("--openai-api-key <key>", "OpenAI API key")
+  .option("--openai-base-url <url>", "OpenAI-compatible API base URL")
+  .option("--openai-model <model>", "OpenAI model name")
+  .option("--fast", "enable fast OpenAI mode using minimal reasoning")
+  .option("--no-fast", "disable fast OpenAI mode")
   .action(async (options) => {
     const configFile = options.config as string;
-    const fileConfig = existsSync(configFile) ? loadConfigFile(configFile) : resolveConfig();
+    const fileConfig = existsSync(configFile) ? loadConfigFile(configFile) : resolveConfigFromEnv(process.env);
     const cliOverrides: PartialAppConfig = {
       run: {
         mode: options.mode,
@@ -35,7 +42,11 @@ program
         allowSendWithoutNote: options.allowSendWithoutNote === true ? true : undefined
       },
       classifier: {
-        provider: options.classifierProvider
+        provider: options.classifierProvider,
+        apiKey: options.openaiApiKey,
+        baseUrl: options.openaiBaseUrl,
+        model: options.openaiModel,
+        fastMode: options.fast
       }
     };
     const config = resolveConfig(mergeConfig(fileConfig, cliOverrides));
@@ -86,9 +97,9 @@ await program.parseAsync(process.argv);
 function mergeConfig(base: PartialAppConfig, overrides: PartialAppConfig): PartialAppConfig {
   return {
     linkedin: { ...base.linkedin, ...overrides.linkedin },
-    run: removeUndefined({ ...base.run, ...overrides.run }),
-    actions: removeUndefined({ ...base.actions, ...overrides.actions }),
-    classifier: removeUndefined({ ...base.classifier, ...overrides.classifier }),
+    run: removeUndefined({ ...base.run, ...removeUndefined(overrides.run ?? {}) }),
+    actions: removeUndefined({ ...base.actions, ...removeUndefined(overrides.actions ?? {}) }),
+    classifier: removeUndefined({ ...base.classifier, ...removeUndefined(overrides.classifier ?? {}) }),
     filters: { ...base.filters, ...overrides.filters },
     storage: { ...base.storage, ...overrides.storage }
   };

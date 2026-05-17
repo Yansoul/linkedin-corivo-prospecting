@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import type { ResponseCreateParamsNonStreaming } from "openai/resources/responses/responses";
 import { z } from "zod";
 import type { AppConfig, ClassifierDecision, ProfileContext, SearchResultCard, TechnicalRisk } from "./types.js";
 
@@ -101,7 +102,7 @@ export class LLMClassifier {
   private readonly client: OpenAI;
 
   constructor(private readonly config: AppConfig["classifier"]) {
-    this.client = new OpenAI();
+    this.client = createOpenAIClient(config);
   }
 
   async classify(query: string, searchCard: SearchResultCard, profile: ProfileContext): Promise<ClassifierDecision> {
@@ -110,53 +111,68 @@ export class LLMClassifier {
     }
 
     const payload = buildClassifierPayload(query, searchCard, profile);
-    const response = await this.client.responses.create({
-      model: this.config.model,
-      input: [
-        { role: "system", content: classifierPrompt },
-        { role: "user", content: JSON.stringify(payload, null, 2) }
-      ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "corivo_linkedin_icp_classification",
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            required: [
-              "qualified",
-              "shouldPrepareConnection",
-              "roleCategory",
-              "companyCategory",
-              "technicalRisk",
-              "icpFitScore",
-              "confidence",
-              "reason",
-              "redFlags"
-            ],
-            properties: {
-              qualified: { type: "boolean" },
-              shouldPrepareConnection: { type: "boolean" },
-              roleCategory: {
-                type: "string",
-                enum: roleCategorySchema.options
-              },
-              companyCategory: { type: "string" },
-              technicalRisk: { type: "string", enum: ["low", "medium-low", "medium", "high"] },
-              icpFitScore: { type: "number", minimum: 0, maximum: 1 },
-              confidence: { type: "number", minimum: 0, maximum: 1 },
-              reason: { type: "string" },
-              redFlags: { type: "array", items: { type: "string" } }
-            }
-          },
-          strict: true
-        }
-      },
-      temperature: this.config.temperature
-    });
+    const response = await this.client.responses.create(buildResponsesCreateParams(this.config, payload));
 
     return parseClassifierOutput(response.output_text);
   }
+}
+
+export function createOpenAIClient(config: AppConfig["classifier"]): OpenAI {
+  return new OpenAI({
+    apiKey: config.apiKey ?? undefined,
+    baseURL: config.baseUrl ?? undefined
+  });
+}
+
+export function buildResponsesCreateParams(
+  config: AppConfig["classifier"],
+  payload: unknown
+): ResponseCreateParamsNonStreaming {
+  return {
+    model: config.model,
+    input: [
+      { role: "system", content: classifierPrompt },
+      { role: "user", content: JSON.stringify(payload, null, 2) }
+    ],
+    text: {
+      format: {
+        type: "json_schema",
+        name: "corivo_linkedin_icp_classification",
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          required: [
+            "qualified",
+            "shouldPrepareConnection",
+            "roleCategory",
+            "companyCategory",
+            "technicalRisk",
+            "icpFitScore",
+            "confidence",
+            "reason",
+            "redFlags"
+          ],
+          properties: {
+            qualified: { type: "boolean" },
+            shouldPrepareConnection: { type: "boolean" },
+            roleCategory: {
+              type: "string",
+              enum: roleCategorySchema.options
+            },
+            companyCategory: { type: "string" },
+            technicalRisk: { type: "string", enum: ["low", "medium-low", "medium", "high"] },
+            icpFitScore: { type: "number", minimum: 0, maximum: 1 },
+            confidence: { type: "number", minimum: 0, maximum: 1 },
+            reason: { type: "string" },
+            redFlags: { type: "array", items: { type: "string" } }
+          }
+        },
+        strict: true
+      }
+    },
+    temperature: config.temperature,
+    ...(config.fastMode ? { reasoning: { effort: "minimal" as const } } : {})
+  };
 }
 
 function fallbackDecision(searchCard: SearchResultCard, profile: ProfileContext): ClassifierDecision {
