@@ -1,0 +1,39 @@
+{
+  "name": "linkedin-corivo-prospecting",
+  "version": "0.1.0",
+  "description": "Local operator-assisted LinkedIn prospecting automation for Corivo early users.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "linkedin-corivo": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "config/linkedin-corivo-prospecting.example.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "commander": "^14.0.2",
+    "openai": "^6.9.1",
+    "playwright-core": "^1.57.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^27.0.0",
+    "@types/node": "^24.10.1",
+    "jsdom": "^27.2.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.8"
+  },
+  "engines": {
+    "node": ">=23.0.0"
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "linkedin": {
+    "baseUrl": "https://www.linkedin.com",
+    "useExistingChromeProfile": true,
+    "chromeUserDataDir": null,
+    "openStrategy": "playwright-cdp",
+    "newCandidateContext": "new-window"
+  },
+  "run": {
+    "mode": "prepare",
+    "maxPreparedPerRun": 5,
+    "maxProfilesReviewedPerQuery": 10,
+    "maxQueriesPerRun": 15,
+    "delayMsBetweenActions": [1500, 4500],
+    "stopOnFirstWarning": true,
+    "resume": true
+  },
+  "actions": {
+    "clickConnect": true,
+    "stopAtFinalDialog": true,
+    "allowSendWithoutNote": false,
+    "allowSendWithoutNoteOnlyInDebugSendMode": true,
+    "requireOperatorVisibleBrowser": true
+  },
+  "classifier": {
+    "provider": "openai",
+    "model": "gpt-5.4-mini",
+    "temperature": 0,
+    "minConfidenceToPrepare": 0.78,
+    "maxTechnicalRiskToPrepare": "medium-low"
+  },
+  "filters": {
+    "skipButtonStates": ["Pending", "Connected", "Message", "Follow"],
+    "positiveKeywords": [
+      "growth",
+      "product marketing",
+      "pmm",
+      "gtm",
+      "go-to-market",
+      "business operations",
+      "bizops",
+      "strategy operations",
+      "product operations",
+      "revops",
+      "revenue operations",
+      "sales operations",
+      "customer success",
+      "customer marketing",
+      "marketing operations",
+      "partnerships",
+      "community",
+      "content strategist",
+      "user researcher",
+      "market research",
+      "founder associate",
+      "chief of staff",
+      "operations manager"
+    ],
+    "negativeKeywords": [
+      "software engineer",
+      "developer",
+      "frontend",
+      "backend",
+      "full-stack",
+      "fullstack",
+      "ml engineer",
+      "machine learning engineer",
+      "ai researcher",
+      "research scientist",
+      "data scientist",
+      "data engineer",
+      "cto",
+      "vp engineering",
+      "head of engineering",
+      "technical founder",
+      "infrastructure",
+      "devops",
+      "platform engineer",
+      "prompt engineer",
+      "solutions engineer"
+    ]
+  },
+  "storage": {
+    "sqlitePath": "data/linkedin-corivo-prospecting.sqlite",
+    "jsonlAuditPath": "data/linkedin-corivo-prospecting.audit.jsonl",
+    "screenshotsDir": "data/screenshots"
+  }
+}
