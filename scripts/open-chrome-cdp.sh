@@ -13,12 +13,28 @@ fi
 
 if pgrep -x "Google Chrome" >/dev/null; then
   echo "Google Chrome is already running without remote debugging."
-  echo "Quit Chrome first, then run: pnpm chrome"
-  echo "This is required because Chrome locks the active profile directory."
-  exit 1
+  echo "Quitting Chrome so it can be relaunched with remote debugging on port $PORT..."
+  osascript -e 'tell application "Google Chrome" to quit' >/dev/null 2>&1 || true
+
+  for _ in {1..30}; do
+    if ! pgrep -x "Google Chrome" >/dev/null; then
+      break
+    fi
+    sleep 1
+  done
+
+  if pgrep -x "Google Chrome" >/dev/null; then
+    echo "Chrome did not quit within 30 seconds."
+    echo "Quit Chrome manually with Cmd+Q, then run: pnpm chrome"
+    exit 1
+  fi
 fi
 
-exec "$CHROME_APP" \
+"$CHROME_APP" \
   --remote-debugging-port="$PORT" \
   --user-data-dir="$PROFILE_DIR" \
-  --profile-directory="$PROFILE_NAME"
+  --profile-directory="$PROFILE_NAME" \
+  >/dev/null 2>&1 &
+
+echo "Chrome launched with remote debugging on port $PORT."
+echo "Now run: pnpm dev"
