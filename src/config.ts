@@ -83,7 +83,7 @@ export const defaultConfig: AppConfig = {
     newCandidateContext: "new-window"
   },
   run: {
-    mode: "prepare",
+    mode: "debug_send",
     maxPreparedPerRun: 5,
     maxProfilesReviewedPerQuery: 10,
     maxQueriesPerRun: 15,
@@ -95,7 +95,7 @@ export const defaultConfig: AppConfig = {
   actions: {
     clickConnect: true,
     stopAtFinalDialog: true,
-    allowSendWithoutNote: false,
+    allowSendWithoutNote: true,
     allowSendWithoutNoteOnlyInDebugSendMode: true,
     requireOperatorVisibleBrowser: true
   },

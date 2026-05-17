@@ -74,7 +74,12 @@ const candidate: SearchResultCard = {
 describe("ActionRunner", () => {
   it("stops at the final dialog in prepare mode", async () => {
     const page = new FakePage();
-    const result = await new ActionRunner(resolveConfig()).prepareConnection(candidate, page);
+    const result = await new ActionRunner(
+      resolveConfig({
+        run: { mode: "prepare" },
+        actions: { allowSendWithoutNote: false }
+      })
+    ).prepareConnection(candidate, page);
 
     expect(result.status).toBe("prepared_dialog_open");
     expect(page.clicked).toContain('button:has-text("Connect")');

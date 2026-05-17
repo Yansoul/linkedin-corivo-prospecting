@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { resolveConfig, resolveConfigFromEnv } from "../src/config.js";
 
 describe("resolveConfig", () => {
-  it("keeps send without note disabled by default", () => {
+  it("sends without a note by default with explicit operator permission", () => {
     const config = resolveConfig();
 
-    expect(config.run.mode).toBe("prepare");
+    expect(config.run.mode).toBe("debug_send");
     expect(config.linkedin.openStrategy).toBe("playwright-persistent");
-    expect(config.actions.allowSendWithoutNote).toBe(false);
+    expect(config.actions.allowSendWithoutNote).toBe(true);
     expect(config.actions.stopAtFinalDialog).toBe(true);
   });
 
