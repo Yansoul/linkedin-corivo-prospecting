@@ -44,6 +44,13 @@ export class PlaywrightBrowserSession implements BrowserSession {
   }
 
   async close(): Promise<void> {
+    if (this.config.openStrategy === "playwright-cdp") {
+      if (this.browser) await this.browser.close();
+      this.context = null;
+      this.browser = null;
+      return;
+    }
+
     if (this.context) await this.context.close();
     else if (this.browser) await this.browser.close();
     this.context = null;
@@ -64,7 +71,7 @@ export class PlaywrightBrowserSession implements BrowserSession {
     if (this.context) return this.context;
 
     if (this.config.openStrategy === "playwright-cdp") {
-      this.browser = await chromium.connectOverCDP("http://127.0.0.1:9222");
+      this.browser = await chromium.connectOverCDP(`http://127.0.0.1:${this.config.cdpPort}`);
       this.context = this.browser.contexts()[0] ?? (await this.browser.newContext());
       return this.context;
     }

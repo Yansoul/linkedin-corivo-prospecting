@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { waitForLoginIfRequired } from "../src/browser-session.js";
-import type { PageLike, WarningSignal } from "../src/types.js";
+import { PlaywrightBrowserSession, waitForLoginIfRequired } from "../src/browser-session.js";
+import type { AppConfig, PageLike, WarningSignal } from "../src/types.js";
 
 class FakePage implements PageLike {
   checks = 0;
@@ -63,5 +63,53 @@ describe("waitForLoginIfRequired", () => {
     });
 
     expect(result).toBe(loginWarning);
+  });
+});
+
+describe("PlaywrightBrowserSession.close", () => {
+  it("disconnects from a Chrome instance attached over CDP without closing its default context first", async () => {
+    const session = new PlaywrightBrowserSession({
+      baseUrl: "https://www.linkedin.com",
+      useExistingChromeProfile: true,
+      chromeUserDataDir: null,
+      cdpPort: 9223,
+      openStrategy: "playwright-cdp",
+      newCandidateContext: "new-window"
+    } satisfies AppConfig["linkedin"]);
+    const closeContext = vi.fn();
+    const closeBrowser = vi.fn();
+
+    Object.assign(session as unknown as { context: unknown; browser: unknown }, {
+      context: { close: closeContext },
+      browser: { close: closeBrowser }
+    });
+
+    await session.close();
+
+    expect(closeContext).not.toHaveBeenCalled();
+    expect(closeBrowser).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes the persistent Playwright context that it launched itself", async () => {
+    const session = new PlaywrightBrowserSession({
+      baseUrl: "https://www.linkedin.com",
+      useExistingChromeProfile: false,
+      chromeUserDataDir: null,
+      cdpPort: 9223,
+      openStrategy: "playwright-persistent",
+      newCandidateContext: "new-window"
+    } satisfies AppConfig["linkedin"]);
+    const closeContext = vi.fn();
+    const closeBrowser = vi.fn();
+
+    Object.assign(session as unknown as { context: unknown; browser: unknown }, {
+      context: { close: closeContext },
+      browser: { close: closeBrowser }
+    });
+
+    await session.close();
+
+    expect(closeContext).toHaveBeenCalledTimes(1);
+    expect(closeBrowser).not.toHaveBeenCalled();
   });
 });

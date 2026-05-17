@@ -19,7 +19,7 @@ This tool is built for visible local runs with human supervision, not unattended
 pnpm install
 ```
 
-The default browser strategy attaches to Chrome over the Chrome DevTools Protocol, using your existing Chrome profile. Quit normal Chrome first, then start it with the helper:
+The default browser strategy attaches to Chrome over the Chrome DevTools Protocol. Modern Chrome refuses remote debugging on the default profile directory, so the helper starts a dedicated visible Chrome profile for this tool. Log in to LinkedIn once in that window; the session is reused on later runs.
 
 ```bash
 pnpm chrome
@@ -34,16 +34,24 @@ pnpm dev
 By default the helper uses:
 
 ```text
-Chrome user data dir: ~/Library/Application Support/Google/Chrome
+Chrome user data dir: ~/.local/share/corivo-linkedin-chrome
 Chrome profile: Default
-Debug port: 9222
+Debug port: 9223
 ```
 
-To use a different Chrome profile:
+To use a different automation profile directory:
 
 ```bash
-LINKEDIN_CORIVO_CHROME_PROFILE="Profile 1" pnpm chrome
+LINKEDIN_CORIVO_CHROME_USER_DATA_DIR="$HOME/.local/share/my-linkedin-profile" pnpm chrome
 ```
+
+If port `9223` is already occupied:
+
+```bash
+LINKEDIN_CORIVO_CHROME_DEBUG_PORT=9224 pnpm chrome
+```
+
+Then set `"cdpPort": 9224` in `config/linkedin-corivo-prospecting.example.json`.
 
 ## Commands
 

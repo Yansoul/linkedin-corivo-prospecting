@@ -47,6 +47,7 @@ export interface AppConfig {
     baseUrl: string;
     useExistingChromeProfile: boolean;
     chromeUserDataDir: string | null;
+    cdpPort: number;
     openStrategy: "playwright-cdp" | "playwright-persistent";
     newCandidateContext: "new-window" | "new-tab";
   };

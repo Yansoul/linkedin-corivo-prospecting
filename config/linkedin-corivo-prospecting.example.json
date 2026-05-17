@@ -3,6 +3,7 @@
     "baseUrl": "https://www.linkedin.com",
     "useExistingChromeProfile": true,
     "chromeUserDataDir": null,
+    "cdpPort": 9223,
     "openStrategy": "playwright-cdp",
     "newCandidateContext": "new-window"
   },

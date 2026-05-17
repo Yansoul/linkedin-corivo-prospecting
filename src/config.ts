@@ -12,6 +12,7 @@ const partialConfigSchema = z
         baseUrl: z.string().url().optional(),
         useExistingChromeProfile: z.boolean().optional(),
         chromeUserDataDir: z.string().nullable().optional(),
+        cdpPort: z.number().int().positive().optional(),
         openStrategy: z.enum(["playwright-cdp", "playwright-persistent"]).optional(),
         newCandidateContext: z.enum(["new-window", "new-tab"]).optional()
       })
@@ -79,6 +80,7 @@ export const defaultConfig: AppConfig = {
     baseUrl: "https://www.linkedin.com",
     useExistingChromeProfile: true,
     chromeUserDataDir: null,
+    cdpPort: 9223,
     openStrategy: "playwright-cdp",
     newCandidateContext: "new-window"
   },

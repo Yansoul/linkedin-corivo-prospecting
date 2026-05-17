@@ -24,6 +24,7 @@ program
   .option("--mode <mode>", "scan, prepare, or debug_send")
   .option("--max-prepared <count>", "maximum prepared/sent candidates per run")
   .option("--allow-send-without-note", "allow clicking Send without a note, only valid in debug_send")
+  .option("--no-allow-send-without-note", "disable clicking Send without a note")
   .option("--classifier-provider <provider>", "openai or none")
   .option("--openai-api-key <key>", "OpenAI API key")
   .option("--openai-base-url <url>", "OpenAI-compatible API base URL")
@@ -39,7 +40,7 @@ program
         maxPreparedPerRun: options.maxPrepared ? Number(options.maxPrepared) : undefined
       },
       actions: {
-        allowSendWithoutNote: options.allowSendWithoutNote === true ? true : undefined
+        allowSendWithoutNote: typeof options.allowSendWithoutNote === "boolean" ? options.allowSendWithoutNote : undefined
       },
       classifier: {
         provider: options.classifierProvider,

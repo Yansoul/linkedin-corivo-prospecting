@@ -7,6 +7,7 @@ describe("resolveConfig", () => {
 
     expect(config.run.mode).toBe("debug_send");
     expect(config.linkedin.openStrategy).toBe("playwright-cdp");
+    expect(config.linkedin.cdpPort).toBe(9223);
     expect(config.actions.allowSendWithoutNote).toBe(true);
     expect(config.actions.stopAtFinalDialog).toBe(true);
   });
@@ -73,5 +74,15 @@ describe("resolveConfig", () => {
     expect(config.classifier.baseUrl).toBe("https://custom.example.com/v1");
     expect(config.classifier.model).toBe("json-model");
     expect(config.classifier.fastMode).toBe(false);
+  });
+
+  it("allows scan mode when send without note is explicitly disabled", () => {
+    const config = resolveConfig({
+      run: { mode: "scan" },
+      actions: { allowSendWithoutNote: false }
+    });
+
+    expect(config.run.mode).toBe("scan");
+    expect(config.actions.allowSendWithoutNote).toBe(false);
   });
 });
