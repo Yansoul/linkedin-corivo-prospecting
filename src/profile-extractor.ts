@@ -3,12 +3,12 @@ import { normalizeWhitespace, nullableText, unique } from "./text.js";
 
 export async function extractProfileContext(page: PageLike, profileUrl: string): Promise<ProfileContext> {
   const playwrightPage = page as unknown as {
-    evaluate<T, A>(fn: (arg: A) => T, arg: A): Promise<T>;
+    evaluate<T>(expression: string): Promise<T>;
   };
-  const profile = await playwrightPage.evaluate(
-    (arg) => {
-      const normalizeWhitespace = (value: string | null | undefined) => (value ?? "").replace(/\s+/g, " ").trim();
-      const nullableText = (value: string | null | undefined) => {
+  const profile = await playwrightPage.evaluate<Omit<ProfileContext, "visibleConnectState"> & { visibleConnectState: string }>(String.raw`
+    (() => {
+      const normalizeWhitespace = (value) => (value ?? "").replace(/\\s+/g, " ").trim();
+      const nullableText = (value) => {
         const normalized = normalizeWhitespace(value);
         return normalized.length > 0 ? normalized : null;
       };
@@ -18,7 +18,7 @@ export async function extractProfileContext(page: PageLike, profileUrl: string):
           .map((element) => normalizeWhitespace(element.getAttribute("aria-label") ?? element.textContent ?? ""))
           .join(" ");
         for (const state of states) {
-          if (new RegExp(`\\b${state}\\b`, "i").test(texts)) return state;
+          if (texts.toLowerCase().includes(state.toLowerCase())) return state;
         }
         return "Unknown";
       };
@@ -28,7 +28,7 @@ export async function extractProfileContext(page: PageLike, profileUrl: string):
       const location = nullableText(document.querySelector("[data-test-profile-location]")?.textContent);
       return {
         name: heading ?? "Unknown",
-        profileUrl: arg.profileUrl,
+        profileUrl: ${JSON.stringify(profileUrl)},
         headline,
         location,
         currentCompany: null,
@@ -54,9 +54,8 @@ export async function extractProfileContext(page: PageLike, profileUrl: string):
         visibleConnectState: inferButtonState(),
         rawVisibleText
       };
-    },
-    { profileUrl }
-  );
+    })()
+  `);
   return {
     ...profile,
     visibleConnectState: toButtonState(profile.visibleConnectState)

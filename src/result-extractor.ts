@@ -116,38 +116,40 @@ function normalizeProfileUrl(href: string, origin: string): string | null {
 
 async function pageEvaluate(page: PageLike, query: string): Promise<SearchResultCard[]> {
   const playwrightPage = page as unknown as {
-    evaluate<T, A>(fn: (arg: A) => T, arg: A): Promise<T>;
+    evaluate<T>(expression: string): Promise<T>;
   };
-  const cards = await playwrightPage.evaluate(
-    (arg) => {
-      const normalizeWhitespace = (value: string | null | undefined) => (value ?? "").replace(/\s+/g, " ").trim();
-      const nullableText = (value: string | null | undefined) => {
+  const cards = await playwrightPage.evaluate<
+    Array<Omit<SearchResultCard, "buttonState"> & { buttonState: string }>
+  >(String.raw`
+    (() => {
+      const normalizeWhitespace = (value) => (value ?? "").replace(/\\s+/g, " ").trim();
+      const nullableText = (value) => {
         const normalized = normalizeWhitespace(value);
         return normalized.length > 0 ? normalized : null;
       };
-      const normalizeProfileUrl = (href: string) => {
+      const normalizeProfileUrl = (href) => {
         const url = new URL(href, document.location.origin);
         const match = url.pathname.match(/^\/in\/[^/]+\/?/i);
         if (!match) return null;
-        return `${url.origin}${match[0].replace(/\/?$/, "/")}`;
+        return url.origin + match[0].replace(/\/?$/, "/");
       };
-      const findCardContainer = (link: Element) =>
+      const findCardContainer = (link) =>
         link.closest("li") ??
         link.closest('[data-view-name*="search"]') ??
         link.closest(".reusable-search__result-container") ??
         link.parentElement;
-      const inferButtonState = (container: Element | null) => {
+      const inferButtonState = (container) => {
         const states = ["Connect", "Pending", "Connected", "Message", "Follow"];
         const texts = [...(container?.querySelectorAll("button, [role='button']") ?? [])]
           .map((element) => normalizeWhitespace(element.getAttribute("aria-label") ?? element.textContent ?? ""))
           .join(" ");
         for (const state of states) {
-          if (new RegExp(`\\b${state}\\b`, "i").test(texts)) return state;
+          if (texts.toLowerCase().includes(state.toLowerCase())) return state;
         }
         return "Unknown";
       };
-      const links = [...document.querySelectorAll<HTMLAnchorElement>('a[href*="/in/"]')];
-      const seen = new Set<string>();
+      const links = [...document.querySelectorAll('a[href*="/in/"]')];
+      const seen = new Set();
       const cards = [];
       for (const link of links) {
         const profileUrl = normalizeProfileUrl(link.href);
@@ -169,18 +171,17 @@ async function pageEvaluate(page: PageLike, query: string): Promise<SearchResult
           connectionDegree: rawText.match(/\b(1st|2nd|3rd)\b/i)?.[1] ?? null,
           buttonState: inferButtonState(container),
           rawText,
-          query: arg.query,
+          query: ${JSON.stringify(query)},
           rank: cards.length + 1
         });
       }
       return cards;
-    },
-    { query }
-  );
+    })()
+  `);
   return cards.map((card) => ({
     ...card,
     buttonState: toButtonState(card.buttonState)
-  }));
+  })) as SearchResultCard[];
 }
 
 function toButtonState(value: string): ButtonState {

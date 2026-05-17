@@ -8,7 +8,7 @@ export interface BrowserSession {
   openProfilePage(url: string): Promise<Page>;
   openNewCandidateContext(url: string): Promise<Page>;
   detectWarning(page: Page): Promise<WarningSignal | null>;
-  waitForLoginIfRequired(page: Page, warning: WarningSignal): Promise<WarningSignal | null>;
+  waitForOperatorResolvableWarning(page: Page, warning: WarningSignal): Promise<WarningSignal | null>;
   close(): Promise<void>;
 }
 
@@ -39,8 +39,8 @@ export class PlaywrightBrowserSession implements BrowserSession {
     return detectWarningOnPage(page);
   }
 
-  async waitForLoginIfRequired(page: Page, warning: WarningSignal): Promise<WarningSignal | null> {
-    return waitForLoginIfRequired(page, warning, (targetPage) => this.detectWarning(targetPage));
+  async waitForOperatorResolvableWarning(page: Page, warning: WarningSignal): Promise<WarningSignal | null> {
+    return waitForOperatorResolvableWarning(page, warning, (targetPage) => this.detectWarning(targetPage));
   }
 
   async close(): Promise<void> {
@@ -61,9 +61,7 @@ export class PlaywrightBrowserSession implements BrowserSession {
     const context = await this.getContext();
     const page = await context.newPage();
     this.windowCounter += 1;
-    await page.evaluate((windowLabel) => {
-      window.name = windowLabel;
-    }, `window-${this.windowCounter}`);
+    await page.evaluate(`window.name = ${JSON.stringify(`window-${this.windowCounter}`)}`);
     return page;
   }
 
@@ -92,25 +90,35 @@ export interface LoginWaitOptions {
   pollMs: number;
 }
 
-export async function waitForLoginIfRequired<TPage extends { url(): string; waitForTimeout(ms: number): Promise<void> }>(
+export async function waitForOperatorResolvableWarning<
+  TPage extends { url(): string; waitForTimeout(ms: number): Promise<void> }
+>(
   page: TPage,
   warning: WarningSignal,
   detectWarning: (page: TPage) => Promise<WarningSignal | null>,
   options: LoginWaitOptions = { timeoutMs: 10 * 60 * 1000, pollMs: 2000 }
 ): Promise<WarningSignal | null> {
-  if (warning.warningType !== "login_required") return warning;
+  if (!isOperatorResolvableWarning(warning)) return warning;
 
   const startedAt = Date.now();
-  console.error("LinkedIn login required. Complete login in the opened Chrome window; the run will continue automatically.");
+  console.error(
+    `LinkedIn ${warning.warningType} detected. Complete it in the opened Chrome window; the run will continue automatically.`
+  );
 
   while (Date.now() - startedAt < options.timeoutMs) {
     await page.waitForTimeout(options.pollMs);
     const currentWarning = await detectWarning(page);
-    if (!currentWarning || currentWarning.warningType !== "login_required") {
-      console.error("LinkedIn login detected. Continuing run.");
+    if (!currentWarning || !isOperatorResolvableWarning(currentWarning)) {
+      console.error(`LinkedIn ${warning.warningType} cleared. Continuing run.`);
       return currentWarning;
     }
   }
 
   return warning;
+}
+
+export function isOperatorResolvableWarning(warning: WarningSignal): boolean {
+  return ["login_required", "captcha", "checkpoint", "verify", "verification", "security check", "unusual activity"].includes(
+    warning.warningType
+  );
 }

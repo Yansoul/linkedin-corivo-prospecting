@@ -20,6 +20,8 @@ describe("package scripts", () => {
     expect(script).toContain('open -na "Google Chrome" --args');
     expect(script).toContain(".local/share/corivo-linkedin-chrome");
     expect(script).toContain("/json/version");
+    expect(script).toContain("/json/list");
+    expect(script).toContain("/json/new?");
     expect(script).toContain("https://www.linkedin.com/feed/");
   });
 });

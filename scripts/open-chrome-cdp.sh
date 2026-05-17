@@ -6,14 +6,28 @@ PROFILE_NAME="${LINKEDIN_CORIVO_CHROME_PROFILE:-Default}"
 PORT="${LINKEDIN_CORIVO_CHROME_DEBUG_PORT:-9223}"
 LOG_PATH="${LINKEDIN_CORIVO_CHROME_LOG:-/tmp/linkedin-corivo-chrome-cdp.log}"
 CDP_VERSION_URL="http://127.0.0.1:$PORT/json/version"
+CDP_LIST_URL="http://127.0.0.1:$PORT/json/list"
 START_URL="${LINKEDIN_CORIVO_START_URL:-https://www.linkedin.com/feed/}"
 
 is_cdp_ready() {
   curl -fsS --max-time 1 "$CDP_VERSION_URL" >/dev/null 2>&1
 }
 
+has_page_target() {
+  curl -fsS --max-time 1 "$CDP_LIST_URL" | grep -q '"type": "page"'
+}
+
+ensure_page_target() {
+  if has_page_target; then
+    return 0
+  fi
+
+  curl -fsS -X PUT --max-time 3 "http://127.0.0.1:$PORT/json/new?$START_URL" >/dev/null
+}
+
 if pgrep -f -- "--remote-debugging-port=$PORT" >/dev/null; then
   if is_cdp_ready; then
+    ensure_page_target
     echo "Chrome with remote debugging port $PORT is already running."
     exit 0
   fi
@@ -42,6 +56,7 @@ open -na "Google Chrome" --args \
 
 for _ in {1..30}; do
   if is_cdp_ready; then
+    ensure_page_target
     echo "Chrome launched with remote debugging on port $PORT."
     echo "Chrome user data dir: $PROFILE_DIR"
     echo "Now run: pnpm dev"

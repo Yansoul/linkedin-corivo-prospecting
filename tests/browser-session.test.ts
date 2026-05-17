@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { PlaywrightBrowserSession, waitForLoginIfRequired } from "../src/browser-session.js";
+import { PlaywrightBrowserSession, waitForOperatorResolvableWarning } from "../src/browser-session.js";
 import type { AppConfig, PageLike, WarningSignal } from "../src/types.js";
 
 class FakePage implements PageLike {
@@ -25,7 +25,7 @@ class FakePage implements PageLike {
   }
 }
 
-describe("waitForLoginIfRequired", () => {
+describe("waitForOperatorResolvableWarning", () => {
   it("waits until login_required clears instead of treating it as a terminal warning", async () => {
     const page = new FakePage();
     const loginWarning: WarningSignal = {
@@ -39,7 +39,7 @@ describe("waitForLoginIfRequired", () => {
       return page.checks < 3 ? loginWarning : null;
     });
 
-    const result = await waitForLoginIfRequired(page, loginWarning, detectWarning, {
+    const result = await waitForOperatorResolvableWarning(page, loginWarning, detectWarning, {
       timeoutMs: 1000,
       pollMs: 1
     });
@@ -57,12 +57,51 @@ describe("waitForLoginIfRequired", () => {
       matchedKeywords: ["sign in to linkedin"]
     };
 
-    const result = await waitForLoginIfRequired(page, loginWarning, async () => loginWarning, {
+    const result = await waitForOperatorResolvableWarning(page, loginWarning, async () => loginWarning, {
       timeoutMs: 1,
       pollMs: 1
     });
 
     expect(result).toBe(loginWarning);
+  });
+
+  it("waits for captcha to clear so the operator can complete it in Chrome", async () => {
+    const page = new FakePage();
+    const captchaWarning: WarningSignal = {
+      warningType: "captcha",
+      pageUrl: "https://www.linkedin.com/search/results/people/",
+      visibleText: "Complete this captcha verification",
+      matchedKeywords: ["captcha", "verification"]
+    };
+    const detectWarning = vi.fn(async () => {
+      page.checks += 1;
+      return page.checks < 2 ? captchaWarning : null;
+    });
+
+    const result = await waitForOperatorResolvableWarning(page, captchaWarning, detectWarning, {
+      timeoutMs: 1000,
+      pollMs: 1
+    });
+
+    expect(result).toBeNull();
+    expect(detectWarning).toHaveBeenCalledTimes(2);
+  });
+
+  it("waits for LinkedIn verification text to clear", async () => {
+    const page = new FakePage();
+    const verifyWarning: WarningSignal = {
+      warningType: "verify",
+      pageUrl: "https://www.linkedin.com/search/results/people/",
+      visibleText: "Please verify your account",
+      matchedKeywords: ["verify"]
+    };
+
+    const result = await waitForOperatorResolvableWarning(page, verifyWarning, async () => null, {
+      timeoutMs: 1000,
+      pollMs: 1
+    });
+
+    expect(result).toBeNull();
   });
 });
 
@@ -111,5 +150,31 @@ describe("PlaywrightBrowserSession.close", () => {
 
     expect(closeContext).toHaveBeenCalledTimes(1);
     expect(closeBrowser).not.toHaveBeenCalled();
+  });
+});
+
+describe("PlaywrightBrowserSession page labeling", () => {
+  it("sets window.name without passing a bundled function into page.evaluate", async () => {
+    const session = new PlaywrightBrowserSession({
+      baseUrl: "https://www.linkedin.com",
+      useExistingChromeProfile: true,
+      chromeUserDataDir: null,
+      cdpPort: 9223,
+      openStrategy: "playwright-cdp",
+      newCandidateContext: "new-window"
+    } satisfies AppConfig["linkedin"]);
+    const evaluate = vi.fn();
+    const context = {
+      newPage: vi.fn(async () => ({
+        evaluate,
+        goto: vi.fn()
+      }))
+    };
+
+    Object.assign(session as unknown as { context: unknown }, { context });
+
+    await session.openSearchPage("growth marketing AI startup");
+
+    expect(evaluate).toHaveBeenCalledWith("window.name = \"window-1\"");
   });
 });

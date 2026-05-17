@@ -39,8 +39,8 @@ export class QueryRunner {
         const queryId = this.store.startQuery(runId, query);
         const searchPage = await this.browser.openSearchPage(query);
         let warning = await this.browser.detectWarning(searchPage);
-        if (warning?.warningType === "login_required") {
-          warning = await this.browser.waitForLoginIfRequired(searchPage, warning);
+        if (warning) {
+          warning = await this.browser.waitForOperatorResolvableWarning(searchPage, warning);
           if (!warning) {
             await searchPage.goto(searchPage.url(), { waitUntil: "domcontentloaded" });
           }
@@ -67,8 +67,8 @@ export class QueryRunner {
           reviewedForQuery += 1;
           const profilePage = await this.browser.openProfilePage(card.profileUrl);
           let profileWarning = await this.browser.detectWarning(profilePage);
-          if (profileWarning?.warningType === "login_required") {
-            profileWarning = await this.browser.waitForLoginIfRequired(profilePage, profileWarning);
+          if (profileWarning) {
+            profileWarning = await this.browser.waitForOperatorResolvableWarning(profilePage, profileWarning);
             if (!profileWarning) {
               await profilePage.goto(profilePage.url(), { waitUntil: "domcontentloaded" });
             }
@@ -144,9 +144,9 @@ function cardWithProfileState(card: SearchResultCard, visibleConnectState: Searc
   return { ...card, buttonState: visibleConnectState };
 }
 
-async function windowLabel(page: { evaluate<T>(fn: () => T): Promise<T> }): Promise<string | null> {
+async function windowLabel(page: { evaluate<T>(expression: string): Promise<T> }): Promise<string | null> {
   try {
-    return await page.evaluate(() => window.name || null);
+    return await page.evaluate("window.name || null");
   } catch {
     return null;
   }
